@@ -158,6 +158,8 @@ private func addKeychainItem(withAttributes attributes: [String: AnyObject]) thr
     var mutableAttributes = attributes
     mutableAttributes[kSecClass as String] = kSecClassGenericPassword
     mutableAttributes[kSecReturnPersistentRef as String] = kCFBooleanTrue
+    // Enable iCloud Keychain sync so tokens are available across all devices
+    mutableAttributes[kSecAttrSynchronizable as String] = kCFBooleanTrue
     // Set a random string for the account name.
     // We never query by or display this value, but the keychain requires it to be unique.
     if mutableAttributes[kSecAttrAccount as String] == nil {
@@ -184,8 +186,12 @@ private func updateKeychainItem(forPersistentRef persistentRef: Data,
         kSecClass as String:               kSecClassGenericPassword,
         kSecValuePersistentRef as String:  persistentRef as NSData,
     ]
+    
+    // Ensure the item remains synchronizable when updating
+    var mutableAttributesToUpdate = attributesToUpdate
+    mutableAttributesToUpdate[kSecAttrSynchronizable as String] = kCFBooleanTrue
 
-    let resultCode = SecItemUpdate(queryDict as CFDictionary, attributesToUpdate as CFDictionary)
+    let resultCode = SecItemUpdate(queryDict as CFDictionary, mutableAttributesToUpdate as CFDictionary)
 
     guard resultCode == errSecSuccess else {
         throw Keychain.Error.systemError(resultCode)
